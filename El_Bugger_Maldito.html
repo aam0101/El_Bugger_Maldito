@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>El Bugger Maldito — vΩ.2 (Ultimate Final)</title>
+<link rel="icon" type="image/png" href="bugger_icon.png"/>
+<style>
+:root{--ink:#e5e7eb;--muted:#9aa0a6;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;color:var(--ink);font-family:ui-monospace,Consolas,monospace;overflow:hidden;background:#07080d;}
+.container{max-width:1100px;margin:0 auto;padding:clamp(10px,2vw,20px);height:100%;display:flex;flex-direction:column;gap:10px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1{margin:0;font-size:clamp(18px,2vw+10px,28px);display:flex;align-items:center;gap:10px}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+button{background:#0f0f12;border:1px solid #242433;color:var(--ink);padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;transition:.08s}
+button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+button.primary{border-color:#ef4444}
+button.success{border-color:#22c55e}
+.screen{position:relative;flex:1;border:1px solid #1d2330;border-radius:14px;background:linear-gradient(180deg,#07070b,#05050a);overflow:hidden}
+#timer{position:absolute;top:10px;right:16px;font-weight:900;color:var(--ok);font-size:clamp(14px,1.6vw,18px)}
+.panel{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto}
+.term{padding:clamp(10px,1.6vw,16px);overflow:auto;line-height:1.5}
+pre{margin:0;white-space:pre-wrap}
+.stage{display:none;padding:clamp(8px,1.6vw,14px)}
+.stage.active{display:block}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.simon{display:grid;grid-template-columns:repeat(2, minmax(90px, 140px));gap:12px;margin-top:8px}
+.pad{width:min(28vw,140px);height:min(28vw,140px);max-width:140px;max-height:140px;border-radius:14px;border:2px solid #222;box-shadow:inset 0 0 18px #000, 0 6px 20px rgba(0,0,0,.35);opacity:.9;cursor:pointer}
+.pad.on{filter:brightness(1.9)}
+.pad.c0{background:#16a34a}.pad.c1{background:#60a5fa}.pad.c2{background:#f59e0b}.pad.c3{background:#ef4444}
+@media (max-width:520px){ .simon{grid-template-columns:repeat(1, minmax(90px, 140px)); justify-content:center} }
+.grid{display:grid;grid-template-columns:repeat(3, minmax(60px, 90px));gap:8px;margin-top:8px}
+.cell{width:min(22vw,90px);height:min(22vw,90px);max-width:90px;max-height:90px;border-radius:10px;background:#0f1116;border:1px solid #2a2a3d;cursor:pointer}
+.slider{appearance:none;width:100%;height:10px;background:#1b1b24;border-radius:10px;outline:none}
+.flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.98),rgba(255,0,0,.98) 45%,rgba(0,0,0,.9) 70%);opacity:0;pointer-events:none}
+.flash.show{animation:flash .9s ease}
+@keyframes flash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
+#evalFixed{position:fixed;right:12px;bottom:12px;z-index:20}
+#evalFixed button{border-color:#22c55e}
+.banner{width:100%;border-radius:12px;border:1px solid #232334;margin-bottom:8px}
+.badge{position:fixed;left:12px;top:12px;background:#111827;border:1px solid #374151;color:#e5e7eb;border-radius:10px;padding:6px 10px;font-size:12px;display:none;z-index:50}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:grid;place-items:center;z-index:40}
+.modal .box{background:#0b0b13;border:1px solid #26263a;border-radius:14px;max-width:min(92vw,560px);padding:18px}
+.modal h3{margin:0 0 8px 0}
+.modal p{margin:.4em 0;color:#cbd5e1}
+.diffRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.hint{font-size:12px;color:#eab308;margin-top:6px}
+.camWrap{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.9);backdrop-filter:blur(3px)}
+.camWrap.show{display:grid}
+.cam{position:relative;border:2px solid #2a2a3d;border-radius:12px;overflow:hidden;background:#000}
+.cam video{display:block;max-width:90vw;max-height:70vh}
+.cam canvas{position:absolute;inset:0}
+</style>
+</head>
+<body>
+<div id="evalFixed"><button id="btnEval" class="success">🧩 Evaluar experiencia (obligatorio para sobrevivir)</button></div>
+<div class="badge" id="demoBadge">[DEMO] Presentación en curso — No se guardan resultados</div>
+
+<div class="container">
+  <header>
+    <h1 id="logo">EL BUGGER MALDITO · vΩ.2</h1>
+    <div class="controls">
+      <button id="btnStart" class="primary">Iniciar</button>
+      <button id="btnReset">Reset</button>
+      <button id="btnSkip" class="warn" style="display:none">Saltar nivel</button>
+
+      <button id="btnMute" class="success">🔇 Silencio: OFF</button>
+    </div>
+  </header>
+  <main class="screen" id="screen">
+    <div id="timer">300</div>
+    <section class="panel">
+      <div class="term" id="term">
+        <img src="bugger_banner.png" class="banner" alt="El Bugger Maldito"/>
+        <div class="muted">[SISTEMA] 10 minijuegos. Enter inicia · M mute · R reset · P modo demo</div>
+        <pre id="log"></pre>
+      </div>
+      <div id="stages"></div>
+      <div class="row" style="padding:10px"><span>Juego <b id="stageNum">0</b>/10</span><span style="margin-left:10px">Estado: <b id="state">Inactivo</b></span></div>
+    </section>
+    <div class="flash" id="flash"></div>
+    <div class="camWrap" id="camWrap">
+      <div class="cam">
+        <video id="cam" autoplay playsinline muted></video>
+        <canvas id="shot"></canvas>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Camera modal -->
+<div class="modal" id="camModal" style="display:none">
+  <div class="box">
+    <h3>Permiso de cámara</h3>
+    <p>El Bugger necesita acceso al sistema de vigilancia para <strong>verificar tu identidad</strong>. No se guardará nada.</p>
+    <div class="diffRow">
+      <button id="allowCam" class="success">Permitir cámara</button>
+      <button id="denyCam">Ahora no</button>
+    </div>
+  </div>
+</div>
+
+<!-- Intro modal -->
+<div class="modal" id="introModal">
+  <div class="box">
+    <h3>Identifícate</h3>
+    <input id="playerName" placeholder="Tu nombre" style="width:100%;padding:10px;border-radius:8px;border:1px solid #2a2a3d;background:#0f0f12;color:#e5e7eb"/>
+    <h3 style="margin-top:10px">Dificultad</h3>
+    <div class="diffRow">
+      <button id="diffEasy">😺 FÁCIL</button>
+      <button id="diffNormal" class="success">😈 MEDIO</button>
+      <button id="diffHard" class="primary">🔥 DIFÍCIL</button>
+    </div>
+    <div class="hint" id="introHint"></div>
+  </div>
+</div>
+
+<script>
+const FORMS_LINK="https://docs.google.com/forms/d/e/1FAIpQLScnrtIk8_ZDD6qWRzMKAI2iEV4lQDvt5t-bGYJFOAqjD5H2Qg/viewform?usp=header";
+
+// --------- Audio (simple) ---------
+const audio={ctx:null,muted:false};
+function initA(){if(!audio.ctx) audio.ctx=new (window.AudioContext||window.webkitAudioContext)();}
+function tone(f=220,d=.15){if(audio.muted)return;initA();const c=audio.ctx,o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.value=f;g.gain.value=.06;o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+d);}
+function noise(d=.4){if(audio.muted)return;initA();const c=audio.ctx,b=c.createBuffer(1,c.sampleRate*d,c.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=(Math.random()*2-1)*(1-i/a.length);const s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start();s.stop(c.currentTime+d);}
+function sweep(){if(audio.muted)return;initA();const c=audio.ctx,o=c.createOscillator(),g=c.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,c.currentTime);o.frequency.exponentialRampToValueAtTime(2200,c.currentTime+.5);g.gain.value=.08;o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+.55);}
+function laugh(){sweep();setTimeout(()=>noise(0.5),200);}
+
+// --------- UI refs ---------
+const logEl=document.getElementById('log'), stagesRoot=document.getElementById('stages'), screen=document.getElementById('screen');
+const timerEl=document.getElementById('timer'), stateEl=document.getElementById('state'), stageNumEl=document.getElementById('stageNum');
+const evalBtn=document.getElementById('btnEval'), flash=document.getElementById('flash');
+const camModal=document.getElementById('camModal'), introModal=document.getElementById('introModal');
+const allowCam=document.getElementById('allowCam'), denyCam=document.getElementById('denyCam');
+const camWrap=document.getElementById('camWrap'), video=document.getElementById('cam'), shot=document.getElementById('shot');
+const demoBadge=document.getElementById('demoBadge'); const logo=document.getElementById('logo');
+
+// --------- State ---------
+let running=false,timeLeft=300,timerInt=null,current=0,playerName='Anónimo',difficulty='medio',surrendered=false;
+let camAllowed=false, camStream=null, demo=false;
+const DIFF={facil:{reaction:1500,code:15000,diff9:15000,sliderTol:15,bossRetry:2},
+            medio:{reaction:900, code:10000,diff9:10000,sliderTol:10,bossRetry:1},
+            dificil:{reaction:800, code:8000, diff9:8000, sliderTol:8, bossRetry:1}};
+
+// --------- Helpers ---------
+function w(t){logEl.textContent += t+"\\n"; logEl.scrollTop=logEl.scrollHeight;}
+function startTimer(){clearInterval(timerInt);timerInt=setInterval(()=>{timeLeft--;timerEl.textContent=timeLeft;if(timeLeft<=0){scare('Tiempo agotado');}},1000);}
+function flashBang(){flash.classList.remove('show'); void flash.offsetWidth; flash.classList.add('show'); if(navigator.vibrate) navigator.vibrate([150,80,200]);}
+function setStageTitle(n,t,d){const s=document.createElement('div');s.className='stage active';s.id='stage'+n;s.innerHTML=`<h2>Juego ${n} · ${t}</h2><div class='muted'>${d||''}</div><div class='content'></div>`;stagesRoot.replaceChildren(s);stageNumEl.textContent=n;}
+function next(){current++; if(current>10){win();return;} STAGES[current-1]();}
+function win(){clearInterval(timerInt);w('> Módulos estabilizados.');stateEl.textContent='Completado';if(!demo){saveScore();}renderRanking(true); if(demo){ setTimeout(()=>{ w('> [SISTEMA] Sesión DEMO finalizada. Resultados no almacenados.'); },400); }}
+function scare(reason){clearInterval(timerInt); w('> '+reason+' → Protocolo de contención'); sweep(); noise(0.6); flashBang(); showScareFrame();}
+function makeSurrenderButton(autosolve){const r=document.createElement('div');r.className='row';const b=document.createElement('button');b.textContent='🤖 Rendirse al Bugger (auto-ejecución)';b.onclick=()=>{timeLeft=Math.max(0,timeLeft-15);surrendered=true;flashBang();laugh();w('[BUGGER] Patético… déjame hacerlo por ti. -15s'); setTimeout(()=>autosolve(),800);};r.appendChild(b);return r;}
+
+// --------- Camera permission flow ---------
+async function requestCamera(){
+  try{
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+    video.srcObject = camStream; camAllowed = true;
+  }catch(e){
+    camAllowed=false;
+  }finally{
+    camModal.style.display='none';
+  }
+}
+allowCam?.addEventListener('click', requestCamera);
+denyCam?.addEventListener('click', ()=>{ camAllowed=false; camModal.style.display='none'; });
+
+function showScareFrame(){
+  camWrap.classList.add('show');
+  const ctx = shot.getContext('2d');
+  const w = shot.width  = Math.max(640, screen.clientWidth*0.8|0);
+  const h = shot.height = Math.max(360, screen.clientHeight*0.6|0);
+
+  if(camAllowed && camStream && video.videoWidth){
+    // Draw webcam frame + glitch overlays
+    ctx.drawImage(video,0,0,w,h);
+    for(let y=0;y<h;y+=3){ const slice=(Math.random()*26-13)|0; const img=ctx.getImageData(0,y,w,2); ctx.putImageData(img,Math.max(0,Math.min(w-2, slice)),y); }
+    ctx.globalAlpha=.28; ctx.fillStyle='red'; ctx.fillRect(0,0,w,h);
+    ctx.globalAlpha=.18; ctx.fillStyle='#00ffff'; ctx.fillRect(10,10,w-20,h-20);
+    ctx.globalAlpha=1;
+    w('> INFECTADO. Identidad capturada.');
+  }else{
+    // Demoníaco digital: ojos flotantes + boca distorsionada
+    ctx.fillStyle='#05060a'; ctx.fillRect(0,0,w,h);
+    // scanlines
+    for(let y=0;y<h;y+=3){ ctx.fillStyle='rgba(255,255,255,'+(Math.random()*0.02)+')'; ctx.fillRect(0,y,w,1); }
+    // eyes
+    function eye(cx,cy,rx,ry){
+      ctx.save(); ctx.translate(cx,cy); ctx.scale(rx,ry);
+      ctx.beginPath(); ctx.ellipse(0,0,1,0.55,0,0,Math.PI*2);
+      ctx.fillStyle='#ffffff'; ctx.shadowColor='#ff0000'; ctx.shadowBlur=30; ctx.fill();
+      ctx.beginPath(); ctx.arc(0,0,0.18,0,Math.PI*2); ctx.fillStyle='#000'; ctx.fill();
+      ctx.restore();
+    }
+    eye(w*0.35,h*0.4,50,28); eye(w*0.65,h*0.4,50,28);
+    // teeth
+    ctx.lineWidth=8; ctx.strokeStyle='#c1121f'; ctx.shadowColor='#ff0033'; ctx.shadowBlur=18; ctx.beginPath();
+    const y0=h*0.7, x0=w*0.28, x1=w*0.72;
+    for(let x=x0; x<=x1; x+=Math.random()*30+12){ const yy=y0 + (Math.random()*14-7); ctx.moveTo(x,yy); ctx.lineTo(x+10, yy + (Math.random()*10-5)); }
+    ctx.stroke();
+    w('> Identidad no verificada… modo espectral.');
+  }
+  if(surrendered) w('[BUGGER] Ya sabía que caerías...');
+}
+
+// --------- Ranking with "???" ---------
+function saveScore(){
+  try{
+    const used=300-timeLeft; const key='bugger_ranking_v2';
+    const arr = JSON.parse(localStorage.getItem(key)||'[]');
+    arr.push({name:playerName,diff:difficulty,seconds:used,surrendered,ts:Date.now()});
+    arr.sort((a,b)=>a.seconds-b.seconds);
+    localStorage.setItem(key, JSON.stringify(arr.slice(0,15)));
+  }catch{}
+}
+function renderRanking(final=false){
+  const key='bugger_ranking_v2'; let arr=[]; try{arr=JSON.parse(localStorage.getItem(key)||'[]')}catch{};
+  if(demo) arr = []; // demo no guarda resultados
+  let top = arr.length? Math.min(...arr.map(x=>x.seconds)) : 260;
+  const delta = Math.max(1, Math.min(3, Math.round(Math.random()*3)||1));
+  const mystery = {name:'???', diff:difficulty, seconds:Math.max(1,top-delta), surrendered:false};
+  const visible = [mystery, ...arr].slice(0,16);
+  const box=document.createElement('div');
+  box.style.cssText='position:fixed;left:12px;bottom:12px;background:#0b0b13;border:1px solid #26263a;padding:10px;border-radius:10px;max-width:46vw;max-height:40vh;overflow:auto;z-index:30';
+  let html='<div style="font-weight:700;margin-bottom:6px">Ranking local (Top 15) — '+difficulty.toUpperCase()+'</div>';
+  html+='<table style="border-collapse:collapse;width:100%;font-size:12px"><tr><th>#</th><th>Nombre</th><th>Dif</th><th>Tiempo</th><th>Rendición</th></tr>';
+  visible.forEach((e,i)=>{ html+=`<tr><td>${i+1}</td><td>${e.name}</td><td>${e.diff}</td><td>${e.seconds}s</td><td>${i===0?'∞':(e.surrendered?'✅':'❌')}</td></tr>`; });
+  html+='</table>';
+  if(final && demo){
+    html += '<div style="margin-top:8px;color:#e5e7eb"><em>💀 El Bugger ha terminado su demostración... pero sigue aquí.</em></div>';
+  }
+  box.innerHTML = html;
+  document.body.appendChild(box);
+  if(!demo) w('[BUGGER] ¿Creíste que serías el primero? Nadie supera al vacío.');
+}
+
+// --------- Stages (auto-exec wired) ---------
+const STAGES=[
+  function(){setStageTitle(1,'Memoria — Secuencia (x3)','3 vidas.');const cont=document.querySelector('#stage1 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: secuencia correcta');next();}cont.appendChild(makeSurrenderButton(autosolve));cont.innerHTML+=`<div class="row"><button id="play1">▶ Reproducir</button><span class="muted">Vidas: <b id="lives1">3</b></span></div><div class="simon"><div class="pad c0" data-i="0"></div><div class="pad c1" data-i="1"></div><div class="pad c2" data-i="2"></div><div class="pad c3" data-i="3"></div></div>`;const pads=[...cont.querySelectorAll('.pad')];let seq=Array.from({length:3},()=>Math.random()*4|0);window._seq1=seq.slice();let user=[],lives=3;function light(i){pads[i].classList.add('on');tone([440,520,360,300][i],.1);setTimeout(()=>pads[i].classList.remove('on'),200)}async function play(){for(const i of seq){light(i);await new Promise(r=>setTimeout(r,300));}}cont.querySelector('#play1').onclick=()=>{user=[];play();};pads.forEach(p=>p.onclick=()=>{const i=+p.dataset.i;user.push(i);light(i);if(user[user.length-1]!==seq[user.length-1]){lives--;cont.querySelector('#lives1').textContent=lives;user=[];if(lives<0){scare('Fallo juego 1');}else play();}else if(user.length===seq.length){w('> OK.');next();}});},
+  function(){setStageTitle(2,'Reacción — Pulsa en verde',`< ${DIFF[difficulty].reaction} ms`);const cont=document.querySelector('#stage2 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: reflejo perfecto');next();}cont.appendChild(makeSurrenderButton(autosolve));cont.innerHTML+=`<div class="row" style="width:100%;justify-content:center"><div id="react" style="width:min(85vw,420px);height:160px;border-radius:14px;background:#7a1111;border:2px solid #311;"></div></div>`;const box=cont.querySelector('#react');let armed=false,startT=0;let killer=setTimeout(()=>scare('Tiempo agotado (reacción)'),DIFF[difficulty].code);setTimeout(()=>{box.style.background='#166534';box.style.borderColor='#0a3';armed=true;startT=performance.now();tone(660,.08)},1200+Math.random()*1200);box.onclick=()=>{if(!armed){clearTimeout(killer);scare('Click prematuro');return;}const t=performance.now()-startT;clearTimeout(killer);if(t<DIFF[difficulty].reaction){w('> Reflejo '+Math.round(t)+' ms');next();}else scare('Demasiado lento');};},
+  function(){setStageTitle(3,'Código — Teclea a tiempo','Introduce el código correcto.');const cont=document.querySelector('#stage3 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: código insertado');next();}cont.appendChild(makeSurrenderButton(autosolve));const code=Math.random().toString(36).slice(2,7).toUpperCase();window._code3=code;cont.innerHTML+=`<div class="row"><div class="big">${code}</div></div><div class="row"><input id="in3" maxlength="5" placeholder="Código"/><button id="ok3" class="success">Validar</button></div>`;const inp=cont.querySelector('#in3'),ok=cont.querySelector('#ok3');let killer=setTimeout(()=>{if(current===3) scare('Tiempo agotado (código)')},DIFF[difficulty].code);ok.onclick=()=>{if((inp.value||'').toUpperCase()===code){clearTimeout(killer);w('> Correcto.');next();}else scare('Código incorrecto');};inp.addEventListener('keydown',e=>{if(e.key==='Enter') ok.click();});inp.focus();},
+  function(){setStageTitle(4,'Memoria — Secuencia (x4)','2 vidas.');const cont=document.querySelector('#stage4 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: secuencia correcta');next();}cont.appendChild(makeSurrenderButton(autosolve));cont.innerHTML+=`<div class="row"><button id="play4">▶ Reproducir</button><span class="muted">Vidas: <b id="lives4">2</b></span></div><div class="simon"><div class="pad c0" data-i="0"></div><div class="pad c1" data-i="1"></div><div class="pad c2" data-i="2"></div><div class="pad c3" data-i="3"></div></div>`;const pads=[...cont.querySelectorAll('.pad')];let seq=Array.from({length:4},()=>Math.random()*4|0);window._seq2=seq.slice();let user=[],lives=2;function light(i){pads[i].classList.add('on');tone([440,520,360,300][i],.1);setTimeout(()=>pads[i].classList.remove('on'),200)}async function play(){for(const i of seq){light(i);await new Promise(r=>setTimeout(r,260));}}cont.querySelector('#play4').onclick=()=>{user=[];play();};pads.forEach(p=>p.onclick=()=>{const i=+p.dataset.i;user.push(i);light(i);if(user[user.length-1]!==seq[user.length-1]){lives--;cont.querySelector('#lives4').textContent=lives;user=[];if(lives<0){scare('Fallo juego 4');}else play();}else if(user.length===seq.length){w('> OK.');next();}});},
+  function(){setStageTitle(5,'Memoria espacial — 3 celdas','Recuerda posiciones.');const cont=document.querySelector('#stage5 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: patrón correcto');next();}cont.appendChild(makeSurrenderButton(autosolve));cont.innerHTML+=`<div class="grid" id="g5"></div>`;const grid=cont.querySelector('#g5');const cells=[];for(let i=0;i<9;i++){const d=document.createElement('div');d.className='cell';d.dataset.i=i;grid.appendChild(d);cells.push(d);}const picks=[];while(picks.length<3){const n=Math.random()*9|0;if(!picks.includes(n)) picks.push(n);}window._grid5=picks.slice();picks.forEach(i=>cells[i].style.background='#22c55e');setTimeout(()=>cells.forEach(c=>c.style.background=''),1000);const sel=[];cells.forEach(c=>c.onclick=()=>{const i=+c.dataset.i;if(sel.includes(i))return;sel.push(i);c.style.background='#22c55e';if(sel.length===3){sel.sort();const ok=JSON.stringify(sel)===JSON.stringify(picks.slice().sort());ok?(w('> OK.'),next()):scare('Patrón incorrecto');}});},
+  function(){setStageTitle(6,'Recall — Juego 1','Repite la secuencia del juego 1.');const cont=document.querySelector('#stage6 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: repetición correcta');next();}cont.appendChild(makeSurrenderButton(autosolve));cont.innerHTML+=`<div class="simon"><div class="pad c0" data-i="0"></div><div class="pad c1" data-i="1"></div><div class="pad c2" data-i="2"></div><div class="pad c3" data-i="3"></div></div>`;const pads=[...cont.querySelectorAll('.pad')];let user=[];const seq=window._seq1||[];function light(i){pads[i].classList.add('on');setTimeout(()=>pads[i].classList.remove('on'),160)}pads.forEach(p=>p.onclick=()=>{const i=+p.dataset.i;user.push(i);light(i);if(user.length===seq.length){const ok=JSON.stringify(user)===JSON.stringify(seq);ok?(w('> OK.'),next()):scare('Secuencia incorrecta');}});},
+  function(){setStageTitle(7,'Precisión — Slider','Acierta el objetivo.');const cont=document.querySelector('#stage7 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: ajuste perfecto');next();}cont.appendChild(makeSurrenderButton(autosolve));cont.innerHTML+=`<div class="row" style="min-width:320px;width:70%"><input id="sl7" class="slider" type="range" min="0" max="100" value="0"/></div><div style="height:14px;background:#111;border:1px solid #333;border-radius:10px;position:relative;overflow:hidden"><div id="target7" style="width:6px;height:14px;background:#ef4444;margin-left:50%"></div></div><div class="row"><button id="ok7" class="success">Detener</button></div>`;const tgt=20+Math.random()*60|0;cont.querySelector('#target7').style.marginLeft=tgt+'%';const sl=cont.querySelector('#sl7');let dir=1;const mover=setInterval(()=>{let v=parseInt(sl.value,10);v+=dir*2;if(v>=100||v<=0) dir*=-1;sl.value=v;},20);const killer=setTimeout(()=>{clearInterval(mover);scare('Tiempo agotado (precisión)');},DIFF[difficulty].code);cont.querySelector('#ok7').onclick=()=>{clearInterval(mover);clearTimeout(killer);const v=parseInt(sl.value,10);if(Math.abs(v-tgt)<=DIFF[difficulty].sliderTol){w('> OK.');next();}else scare('Desalineado');};},
+  function(){setStageTitle(8,'Direcciones — Ruta','Sigue las flechas.');const cont=document.querySelector('#stage8 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: ruta perfecta');next();}cont.appendChild(makeSurrenderButton(autosolve));const arrows=['⬆️','➡️','⬇️','⬅️'],keys=['ArrowUp','ArrowRight','ArrowDown','ArrowLeft'];const seq=Array.from({length:5},()=>Math.random()*4|0);cont.innerHTML+=`<div class="row" id="a8" style="font-size:clamp(28px,4vw,42px)"></div><div class="muted" style="font-size:12px">Pulsa las teclas en el mismo orden.</div>`;const a8=cont.querySelector('#a8');(async()=>{for(const i of seq){const s=document.createElement('span');s.textContent=arrows[i];s.style.marginRight='8px';a8.appendChild(s);await new Promise(r=>setTimeout(r,260));}})();let pos=0;function h(e){const i=keys.indexOf(e.key);if(i<0)return;e.preventDefault();if(i===seq[pos]){if(++pos===seq.length){window.removeEventListener('keydown',h);w('> OK.');next();}}else{window.removeEventListener('keydown',h);scare('Dirección errónea');}}window.addEventListener('keydown',h);},
+  function(){setStageTitle(9,'Percepción — Diferente','Encuentra el distinto.');const cont=document.querySelector('#stage9 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: objetivo correcto');next();}cont.appendChild(makeSurrenderButton(autosolve));cont.innerHTML+=`<div class="grid" id="og" style="grid-template-columns:repeat(2, minmax(90px, 120px))"></div>`;const base=Math.floor(Math.random()*200)+30;const diff=base+(Math.random()<.5?-12:12);const og=cont.querySelector('#og');let correct=Math.random()*4|0;for(let i=0;i<4;i++){const d=document.createElement('div');d.className='cell';const v=i===correct?diff:base;d.style.background=`rgb(${v},${v},${v})`;d.style.height='110px';d.style.width='110px';d.style.borderRadius='10px';og.appendChild(d);}let done=false;const killer=setTimeout(()=>{if(!done) scare('Tiempo agotado (percepción)');},DIFF[difficulty].diff9);og.onclick=(e)=>{if(done)return;done=true;clearTimeout(killer);const elems=[...og.children];const clicked=elems.indexOf(e.target.closest('div'));if(clicked===correct){w('> OK.');next();}else scare('Equivocado');};},
+  function(){setStageTitle(10,'BOSS — Combo','2 de juego4 + secuencia de juego1');const cont=document.querySelector('#stage10 .content');let solved=false;function autosolve(){if(solved)return;solved=true;w('> Autoejecución: combo validado');next();}cont.appendChild(makeSurrenderButton(autosolve));cont.innerHTML+=`<div class="simon"><div class="pad c0" data-i="0"></div><div class="pad c1" data-i="1"></div><div class="pad c2" data-i="2"></div><div class="pad c3" data-i="3"></div></div>`;const pads=[...cont.querySelectorAll('.pad')];const need=[...(window._seq2||[]).slice(0,2),...(window._seq1||[])];let user=[];pads.forEach(p=>p.onclick=()=>{const i=+p.dataset.i;user.push(i);p.classList.add('on');setTimeout(()=>p.classList.remove('on'),150);if(user.length===need.length){const ok=JSON.stringify(user)===JSON.stringify(need);if(ok){w('> ¡Sistema estabilizado!');next();}else{w('> Error. Último intento…');if(DIFF[difficulty].bossRetry>0){DIFF[difficulty].bossRetry--;user=[];}else scare('Combo incorrecto');}}});}
+];
+
+// --------- Flow ---------
+function start(){ if(running) return; running=true; logEl.textContent=''; stagesRoot.innerHTML=''; current=0; timeLeft=300; timerEl.textContent=timeLeft; stateEl.textContent='En curso'; startTimer();
+  // Greeting depending on difficulty (after intro set)
+  setTimeout(()=>{ if(playerName){ const salute = difficulty==='facil' ? `Hola, ${playerName}… ¿vienes a jugar con las luces, pequeño?` :
+                   (difficulty==='dificil' ? `${playerName}. Ya estás dentro. Esta vez no saldrás.` : `${playerName}… el sistema recuerda tu rostro.`); w('[BUGGER] '+salute); } }, 200);
+  next();
+}
+function resetAll(){running=false;clearInterval(timerInt);timeLeft=300;timerEl.textContent=timeLeft;stateEl.textContent='Inactivo';stagesRoot.innerHTML='';logEl.textContent='';surrendered=false;camWrap.classList.remove('show');}
+
+document.getElementById('btnStart').onclick=start;
+document.getElementById('btnReset').onclick=resetAll;
+document.getElementById('btnMute').onclick=(e)=>{audio.muted=!audio.muted;e.currentTarget.textContent=audio.muted?'🔈 Silencio: ON':'🔇 Silencio: OFF';};
+window.addEventListener('keydown',(e)=>{if(e.key==='Enter') start(); if(e.key==='R'||e.key==='r') resetAll(); if(e.key.toLowerCase()==='m') document.getElementById('btnMute').click(); if(e.key.toLowerCase()==='p') enableDemo();});
+
+// --------- Intro & camera sequence ---------
+function choose(diff){
+  const n=(document.getElementById('playerName').value||'').trim();
+  playerName = n || 'Carne sin identidad';
+  difficulty = diff;
+  localStorage.setItem('bugger_player_name',playerName);
+  localStorage.setItem('bugger_player_diff',difficulty);
+  introModal.style.display='none';
+  camModal.style.display='grid'; // ask cam after selecting difficulty
+}
+document.getElementById('diffEasy').onclick  = ()=>choose('facil');
+document.getElementById('diffNormal').onclick= ()=>choose('medio');
+document.getElementById('diffHard').onclick  = ()=>choose('dificil');
+
+// Logo long-press = demo
+let pressTimer=null;
+logo.addEventListener('mousedown',()=>{ pressTimer=setTimeout(enableDemo, 3000); });
+logo.addEventListener('mouseup', ()=>{ clearTimeout(pressTimer); });
+logo.addEventListener('mouseleave', ()=>{ clearTimeout(pressTimer); });
+
+function enableDemo(){
+  demo=true; demoBadge.style.display='block';
+  introModal.style.display='none'; camModal.style.display='none';
+  playerName='DEMO_USER'; difficulty='medio';
+  w('[DEMO] Modo presentación activo. No se guardan resultados.');
+  start();
+}
+
+// Evaluate button (always visible)
+evalBtn.onclick=()=>{ window.open(FORMS_LINK,'_blank'); w('[BUGGER] Intentas escapar... pero aún no has terminado.'); };
+</script>
+
+<style>
+/* Skip-level glitch overlay */
+#glitchOverlay{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:99999}
+#glitchOverlay .msg{font:700 2rem/1.3 system-ui,Segoe UI,Roboto,Arial;color:#f33;text-shadow:0 0 2px #fff;animation:glitch 0.1s infinite}
+@keyframes glitch{0%{transform:skewX(-5deg)}50%{transform:skewX(5deg)}100%{transform:skewX(-5deg)}}
+/* Hide any legacy surrender buttons if they exist */
+.btn-rendirse, #btnRendirse, [data-role="rendirse"] { display:none !important }
+</style>
+<div id="glitchOverlay"><div class="msg">⚠️ Error en el sistema. Saltando nivel...</div></div>
+
+
+<script>
+(function(){
+  // Attempt to detect current difficulty (heuristics based on existing code)
+  // We assume there is a global 'difficulty' or similar; otherwise we track via button clicks.
+  let EASY_FLAG = false;
+  const easyBtn = document.querySelector('#btnEasy, button:contains("FÁCIL"), button:contains("FÁCIL"), button:contains("😺 FÁCIL")');
+  // Fallback: observe clicks on difficulty buttons
+  document.addEventListener('click', (e)=>{
+    const t = e.target;
+    if(!t) return;
+    const txt = (t.textContent||'').toUpperCase();
+    if(txt.includes('FÁCIL') || txt.includes('FACIL') || txt.includes('EASY')){
+      EASY_FLAG = true;
+      const sk = document.getElementById('btnSkip'); if(sk) sk.style.display='';
+    }
+    if(txt.includes('DIFÍCIL') || txt.includes('DIFICIL') || txt.includes('MEDIO') || txt.includes('MEDIUM') || txt.includes('HARD')){
+      EASY_FLAG = false;
+      const sk = document.getElementById('btnSkip'); if(sk) sk.style.display='none';
+    }
+  }, true);
+
+  // On load, hide skip unless we later detect easy
+  const skipBtn = document.getElementById('btnSkip');
+  if(skipBtn){
+    skipBtn.addEventListener('click', async ()=>{
+      if(!EASY_FLAG){ return; }
+      const ok = window.confirm('¿Quieres saltarte este nivel?');
+      if(!ok) return;
+
+      // Random bilingual messages
+      const msgs = [
+        '⚠️ Error en el sistema. Saltando nivel...',
+        '⚠️ System failure detected. Skipping level...',
+        '⚠️ Anomalía detectada. Reubicando al siguiente nivel...',
+        '⚠️ Kernel panic! Fast-forwarding...'
+      ];
+      const msg = msgs[Math.floor(Math.random()*msgs.length)];
+      const overlay = document.getElementById('glitchOverlay');
+      if(overlay){
+        overlay.style.display='flex';
+        const m = overlay.querySelector('.msg'); if(m) m.textContent = msg;
+      }
+
+      // Try to use existing stage management if available
+      try {
+        // Common globals inferred from the game code
+        if(typeof current !== 'undefined' && typeof STAGES !== 'undefined' && typeof runStage === 'function'){
+          current = Math.min((current||1)+1, STAGES.length);
+          setTimeout(()=>{
+            if(overlay) overlay.style.display='none';
+            runStage();
+          }, 1800);
+          return;
+        }
+      } catch(e){ /* fallthrough */ }
+
+      // Fallback: emit a custom event other code can handle
+      setTimeout(()=>{
+        if(overlay) overlay.style.display='none';
+        document.dispatchEvent(new CustomEvent('skip-level'));
+      }, 1800);
+    });
+  }
+
+  // Utility: CSS :contains polyfill for querySelector usage above (no native support); noop because used only once.
+})();
+</script>
+
+</body>
+</html>
